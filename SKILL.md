@@ -1,6 +1,6 @@
 ---
 name: android-reverse-engineering
-description: Use when the user wants to decompile an Android APK, XAPK, JAR, or AAR, inspect obfuscated Android code, extract HTTP APIs, dump runtime DEX files with Frida, trace native library or JNI activity, or hand off Android `.so` analysis into IDA Pro through MCP.
+description: Use when the user wants to decompile an Android APK, XAPK, JAR, or AAR, inspect obfuscated Android code, extract HTTP APIs, reproduce app behavior offline, dump runtime DEX files with Frida, trace native library or JNI activity, or hand off Android `.so` analysis into IDA Pro through MCP.
 ---
 
 # Android Reverse Engineering
@@ -43,7 +43,31 @@ See:
 $HOME/.codex/skills/android-reverse-engineering/references/frida-setup.md
 ```
 
+For native `.so` handoff to IDA Pro, verify local IDA and MCP readiness:
+
+```bash
+bash "$HOME/.codex/skills/android-reverse-engineering/scripts/check-ida-mcp.sh"
+```
+
+This check reports the IDA app path, `idat` readiness, `ida-pro-mcp` installation, plugin links, Codex MCP config, and whether `http://127.0.0.1:13337/mcp` is reachable.
+
 ## Workflow
+
+### Static vs Dynamic Strategy
+
+Default to **static first, dynamic to prove**:
+
+- Static analysis is usually fastest for the first working map: entry points, class names, call graph, native exports, constants, catalogs, templates, and payload layouts.
+- Dynamic analysis is more accurate for executed behavior: real call order, actual arguments/returns, library scanner semantics, JNI bridge effects, and whether a Python replacement already performs part of the Android transformation.
+- If static and dynamic disagree, treat dynamic evidence as authoritative for the triggered input and current app build; then return to static/IDA to explain the mismatch and cover untriggered branches.
+
+For offline reproductions such as QR/card parsers, use this closure pattern:
+
+1. Build a static-route implementation from jadx/IDA evidence.
+2. Hook the smallest meaningful runtime stages, not only final UI output. Capture function name, argument lengths, return lengths, short hex heads, and SHA-256 hashes for each stage.
+3. Write a dynamic-evidence implementation independently from the static script. It may share extracted constants or catalogs when those constants come from native/static analysis, but the flow should be justified by Frida/ADB evidence.
+4. Compare both implementations on the same sample with JSON field checks and byte-for-byte artifact hashes for intermediate payloads and final files.
+5. Keep the dynamic trace summary and comparison test with the deliverable so future maintainers can distinguish "inferred from code" from "observed at runtime."
 
 ### Phase 1: Verify and Install Dependencies
 
@@ -237,6 +261,15 @@ Use the resulting artifacts to answer questions such as:
 - Which DEX files only exist in memory after startup?
 - Which `.so` files load when a specific feature is exercised?
 - Which native function offsets back a given Java `native` method?
+- Which scanner/parser APIs return raw transport bytes versus already-normalized payload bytes?
+- Which native or Java bridge function transforms the data between external input and final app-visible output?
+
+For behavior reproduction tasks, prefer hooks that bracket semantic boundaries:
+
+- Scanner output: e.g. ZXing `decode*` results, raw bytes, text bytes, barcode format.
+- Native bridge input/output: e.g. `byte[]` lengths, fragment headers, return codes, callback emissions.
+- Final artifacts: text emitted to UI/model methods, image bytes, files, network bodies, or database writes.
+- Cross-checks: save small binary artifacts and hashes; avoid relying only on printed strings or UI screenshots.
 
 See:
 
@@ -249,7 +282,41 @@ $HOME/.codex/skills/android-reverse-engineering/references/native-so-tracing.md
 
 Use this branch when the native trace identifies a specific `.so` and you want Codex to analyze it inside IDA Pro through MCP.
 
-Install and configure `ida-pro-mcp`, open the target binary in IDA, and then ask Codex to use IDA MCP against the offsets or functions that appeared in your Frida traces.
+**Action**: Run the IDA/MCP checker before attempting handoff.
+
+```bash
+bash "$HOME/.codex/skills/android-reverse-engineering/scripts/check-ida-mcp.sh"
+```
+
+If `IDA_MCP_READY:1` appears, check `IDA_IDB_OPEN`. When it is `0`, open the target `.so` first, then re-run the check. When it is `1`, use IDA MCP directly. Start with `server_health`, then `survey_binary`, then inspect offsets from Frida with `lookup_funcs`, `analyze_function`, `decompile`, `disasm`, `trace_data_flow`, and apply names or comments with `rename` and `set_comments`.
+
+If IDA is installed but `IDA_MCP_REACHABLE:0` appears:
+
+1. Open IDA Pro and open the target `.so`, or choose "Go" from the Quick start screen.
+2. Start the plugin with `Edit -> Plugins -> MCP` or `Ctrl+Option+M` on macOS.
+3. If the plugin is installed but IDA does not discover it, use the absolute-path Python console bootstrap printed by `check-ida-mcp.sh`.
+
+When the MCP server is reachable, correlate Frida output with IDA:
+
+- For `jni-trace.jsonl`, normalize offsets against the loaded module image base before jumping to IDA addresses.
+- For `native-loads.jsonl`, confirm the exact `.so` path and ABI before opening in IDA.
+- Prefer a first `survey_binary` pass over broad `list_funcs`/`imports` calls, then narrow by strings, exports, JNI names, and trace offsets.
+
+If IDA is installed but the MCP tools are not exposed in the current Codex turn, do not block on the GUI. Use `idat` in headless mode with a focused IDAPython script:
+
+```bash
+idat -A -S/path/to/script.py /path/to/libtarget.so
+```
+
+The script should export a compact JSON report with only the needed facts: JNI/exported function names, imports, strings near the target, xrefs to constants and data blobs, decompiled text when Hex-Rays is available, and file offsets for native byte arrays. This is often enough to recover native key material, JNI bridge behavior, or payload layouts without requiring an interactive IDB.
+
+For JNI-backed QR or card parsers:
+
+- Compare Java scanner APIs against Python replacements before porting byte transforms. Android code may use ZXing `Result.getRawBytes()`, while Python libraries such as `zxing-cpp` may already return the decoded QR payload.
+- Trace `GetByteArrayElements`, `NewByteArray`, `SetByteArrayRegion`, Java callbacks, and constants such as `1024` to understand fragment packing and RSA block boundaries.
+- When a native helper reads data from another `.so`, follow imported C++ helpers into the dependency library and map VMA to file offsets with the binary's program headers before copying bytes.
+- If dynamic tracing proves that Python scanner output equals a post-native-transform buffer, skip reimplementing the skipped Android transform and document that evidence in the offline script.
+- Validate reconstructed output against runtime evidence: QR fragment payloads, decrypted card text, rebuilt images, and final structured fields should match by SHA-256 where possible.
 
 See:
 
@@ -266,6 +333,8 @@ At the end of the workflow, deliver:
 3. API documentation for all discovered endpoints
 4. A call-flow map for key paths from UI to network, especially authentication and main features
 5. Optional runtime artifacts such as dumped DEX files, native load traces, and JNI registration traces
+6. For offline reproduction tasks, a standalone script, sample input, README usage notes, and a smoke/comparison test
+7. When both static and dynamic routes were used, a concise reconciliation note explaining which facts came from static code and which were observed at runtime
 
 ## References
 

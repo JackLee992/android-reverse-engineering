@@ -2,10 +2,33 @@
 
 function safeReadCString(ptrValue) {
     try {
-        return ptrValue.isNull() ? null : Memory.readCString(ptrValue);
+        if (ptrValue.isNull()) {
+            return null;
+        }
+        if (typeof ptrValue.readCString === 'function') {
+            return ptrValue.readCString();
+        }
+        return Memory.readCString(ptrValue);
     } catch (error) {
         return null;
     }
+}
+
+function findGlobalExport(name) {
+    if (typeof Module.findGlobalExportByName === 'function') {
+        return Module.findGlobalExportByName(name);
+    }
+    if (typeof Module.getGlobalExportByName === 'function') {
+        try {
+            return Module.getGlobalExportByName(name);
+        } catch (error) {
+            return null;
+        }
+    }
+    if (typeof Module.findExportByName === 'function') {
+        return Module.findExportByName(null, name);
+    }
+    return null;
 }
 
 function emit(event, message, extra) {
@@ -17,7 +40,7 @@ function emit(event, message, extra) {
 
 let hookCount = 0;
 ['dlopen', 'android_dlopen_ext'].forEach(function(name) {
-    const address = Module.findExportByName(null, name);
+    const address = findGlobalExport(name);
     if (address === null) {
         return;
     }
