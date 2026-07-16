@@ -88,7 +88,7 @@ inside Hermes: register it as an MCP server and drive it with `delegate_task`/to
    ```bash
    hermes mcp add ida-pro \
      --command "$HOME/.local/share/ida-pro-mcp-venv/bin/python" \
-     --args   "$HOME/.hermes/skills/android/android-reverse-engineering/scripts/idalib_stdio_launcher.py"
+     --args   "$SKILL_DIR/scripts/idalib_stdio_launcher.py"
    # answer "Y" to "Enable all 67 tools?" — then START A NEW SESSION
    ```
 

@@ -30,7 +30,7 @@ export FRIDA_PYTHON=/absolute/path/to/python-with-frida
 Then verify:
 
 ```bash
-bash "$HOME/.hermes/skills/android/android-reverse-engineering/scripts/check-dynamic-deps.sh"
+bash "$SKILL_DIR/scripts/check-dynamic-deps.sh"
 ```
 
 ## Device setup

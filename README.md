@@ -1,13 +1,16 @@
 # android-reverse-engineering
 
-A [Hermes Agent](https://hermes-agent.nousresearch.com) / Codex **skill** for
-end-to-end Android reverse engineering: decompile an APK, trace call flows,
-extract APIs, dump runtime DEX, trace native/JNI activity, hand `.so` files to
-IDA Pro, and reverse + re-implement the crypto/parse chains hiding in native
-libs — with an evidence discipline for proving your port matches the real app.
+A portable **skill** for end-to-end Android reverse engineering that works in
+**Codex, Claude Code, and [Hermes Agent](https://hermes-agent.nousresearch.com)**:
+decompile an APK, trace call flows, extract APIs, dump runtime DEX, trace
+native/JNI activity, hand `.so` files to IDA Pro, and reverse + re-implement the
+crypto/parse chains hiding in native libs — with an evidence discipline for
+proving your port matches the real app.
 
-> This repo is the standalone, version-controlled copy of the skill. Clone it
-> into `~/.hermes/skills/android/android-reverse-engineering/` to use it, then
+> This repo is the standalone, version-controlled copy of the skill. It is a
+> self-contained `SKILL.md` directory: all commands reference `$SKILL_DIR` (the
+> folder holding this `SKILL.md`), so it resolves correctly wherever each harness
+> installs it. Clone it into your harness's skills dir (see below), then
 > `git pull` to update across machines.
 
 ## What it does
@@ -60,14 +63,27 @@ bash scripts/check-dynamic-deps.sh
 
 Install guidance: `references/setup-guide.md`.
 
-## Install as a Hermes skill
+## Install
+
+Clone into your harness's skills directory. The skill is a self-contained
+`SKILL.md` dir and autoloads in all three:
 
 ```bash
+# Hermes (categorized tree)
 git clone https://github.com/JackLee992/android-reverse-engineering.git \
     ~/.hermes/skills/android/android-reverse-engineering
+
+# Codex
+git clone https://github.com/JackLee992/android-reverse-engineering.git \
+    ~/.codex/skills/android-reverse-engineering
+
+# Claude Code
+git clone https://github.com/JackLee992/android-reverse-engineering.git \
+    ~/.claude/skills/android-reverse-engineering
 ```
 
-The skill autoloads in Hermes. Update anytime with `git pull` from that dir.
+All in-skill paths use `$SKILL_DIR` (the folder holding `SKILL.md`), so they
+resolve wherever you clone it. Update anytime with `git pull` from that dir.
 
 ## References
 
