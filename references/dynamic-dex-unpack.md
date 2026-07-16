@@ -15,13 +15,13 @@ Use runtime DEX dumping when:
 1. Check host and device prerequisites:
 
 ```bash
-bash "$HOME/.codex/skills/android-reverse-engineering/scripts/check-dynamic-deps.sh"
+bash "$HOME/.hermes/skills/android/android-reverse-engineering/scripts/check-dynamic-deps.sh"
 ```
 
 2. Spawn the app and dump any DEX files seen by ART:
 
 ```bash
-bash "$HOME/.codex/skills/android-reverse-engineering/scripts/run-frida-dexdump.sh" \
+bash "$HOME/.hermes/skills/android/android-reverse-engineering/scripts/run-frida-dexdump.sh" \
   --package com.example.app \
   --output-dir output/runtime-dex
 ```

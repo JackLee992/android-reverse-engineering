@@ -5,7 +5,7 @@
 Use this to see when runtime libraries are loaded:
 
 ```bash
-bash "$HOME/.codex/skills/android-reverse-engineering/scripts/run-frida-trace-loads.sh" \
+bash "$HOME/.hermes/skills/android/android-reverse-engineering/scripts/run-frida-trace-loads.sh" \
   --package com.example.app \
   --output output/native-loads.jsonl
 ```
@@ -26,7 +26,7 @@ Use the trace to identify:
 Use this to map Java method signatures to native function pointers:
 
 ```bash
-bash "$HOME/.codex/skills/android-reverse-engineering/scripts/run-frida-trace-jni.sh" \
+bash "$HOME/.hermes/skills/android/android-reverse-engineering/scripts/run-frida-trace-jni.sh" \
   --package com.example.app \
   --output output/jni-trace.jsonl
 ```
