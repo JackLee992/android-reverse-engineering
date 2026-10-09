@@ -85,6 +85,30 @@ git clone https://github.com/JackLee992/android-reverse-engineering.git \
 All in-skill paths use `$SKILL_DIR` (the folder holding `SKILL.md`), so they
 resolve wherever you clone it. Update anytime with `git pull` from that dir.
 
+## Optional REA integration and cross-device updates
+
+REA adds structured APK queries and analysis of other application formats. This
+skill remains the Android workflow for full decompilation, Frida/ADB runtime
+evidence, native handoffs, and reconstruction validation. See
+[the integration guide](references/rea-integration.md).
+
+The companion, customized REA skill is maintained in
+[JackLee992/reverse-engineer-anything](https://github.com/JackLee992/reverse-engineer-anything)
+(private; access with the owner's GitHub account). Its README covers first-time
+runtime/JADX/MCP setup; cloning skill files alone does not install those tools.
+
+For existing Codex clones on another machine:
+
+```bash
+git -C "${CODEX_HOME:-$HOME/.codex}/skills/android-reverse-engineering" pull --ff-only
+git -C "$HOME/.agents/skills/reverse-engineer-anything" pull --ff-only
+```
+
+Use that harness's actual skill directories for Claude Code or Hermes. If a
+directory was installed without Git, preserve local edits and install the Git
+clone before using `git pull`. Machine-specific MCP paths are configured on each
+device; do not copy the whole Codex configuration between machines.
+
 ## References
 
 | File | Topic |
@@ -105,6 +129,7 @@ resolve wherever you clone it. Update anytime with `git pull` from that dir.
 | `reverse-columnar-binary-format.md` | Reversing a vendor's packed/columnar binary |
 | `sealing-extracted-secrets.md` | Safely stewarding a key extracted from an APK |
 | `scan-decode-pipeline-analysis.md` | Analyzing scan/decode pipelines |
+| `rea-integration.md` | REA routing, compatibility, evidence, and cross-device setup |
 
 ## Scripts
 

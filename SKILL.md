@@ -49,6 +49,12 @@ See:
 $SKILL_DIR/references/frida-setup.md
 ```
 
+## Optional REA Analysis Backend
+
+Use REA's focused APK queries when structured manifest, class, method, or incoming-reference evidence answers the question. Keep this skill as the Android workflow: use the existing jadx/Vineflower scripts for full decompilation and XAPK handling, Frida/ADB for executed behavior, and direct IDA MCP or the existing headless workflow for native libraries.
+
+Read [references/rea-integration.md](references/rea-integration.md) when selecting REA, connecting it to the local tools, or updating across devices. Prefer an existing working `rea` CLI; if this machine has the dedicated launcher at `$HOME/.local/bin/rea`, use it to retain its Node/JADX settings. An unavailable REA provider does not block the existing workflow.
+
 ## Workflow
 
 ### Phase 1: Verify and Install Dependencies
