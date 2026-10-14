@@ -52,8 +52,49 @@ adb shell /data/local/tmp/frida-server &
 Rooted workflows often use:
 
 ```bash
-adb shell su -c /data/local/tmp/frida-server
+adb -s SERIAL shell "su -c 'exec /data/local/tmp/frida-server'"
 ```
+
+### Scoped attach and actual server identity
+
+For an existing selected app, keep the server task-owned and listen on device
+loopback. Disable preload when only that app needs inspection and use internal
+policy softening without changing global SELinux mode:
+
+```bash
+adb -s SERIAL shell "su -c 'exec /data/local/tmp/TASK-frida-server -l 127.0.0.1:27043 --policy-softener=internal --disable-preload'"
+adb -s SERIAL forward --no-rebind tcp:29377 tcp:27043
+```
+
+Verify the actual server process's `/proc/PID/cmdline` matches the owned executable
+and `/proc/PID/status` has UID0. A separate successful `su -c id` does not prove
+the server started as root. A physical API33 run exposed an unquoted multi-command
+ADB launch: only its first command ran through `su`, while later `&&` commands and
+the server ran as Shell/UID2000. Frida then reported `unable to access process`.
+Quoting the whole remote root command and checking the server UID resolved the
+attach without changing SELinux, which remained Enforcing.
+
+When orchestrating through Python, pass one quoted remote command to ADB:
+
+```python
+remote_command = "su -c " + shlex.quote(task_command)
+subprocess.run([adb, "-s", serial, "shell", remote_command], check=True)
+```
+
+Use the explicit original app PID obtained from the selected device. Preserve
+failed attach receipts, detach the observer, stop only the UID/executable-verified
+owned server, remove only its temporary files and forward, and compare the prior
+forward map and SELinux mode after cleanup. Do not resolve a UID2000 launch error
+by granting unrelated permissions or relaxing global policy.
+
+For native-protected catalog logic, a useful first observation is the normally
+populated activity's retained JSON and source metadata objects. Read these after
+the normal UI flow has loaded, with bounded instance/list counts; do not invoke
+protected loaders to manufacture a result. Before/after normal download snapshots
+can expose installed-source filtering. Treat rows, distinct IDs, unknown entry
+counts, acquired file bytes, decoded whole-source coverage and rendered-entry
+parity as separate evidence. Metadata and a one-word response are not complete
+local dictionaries.
 
 ## Notes
 
